@@ -1,0 +1,52 @@
+---
+- hosts: localhost
+  connection: local
+  collections:
+    - vmware.alb
+  tasks:
+
+    - name: defining avi config
+      set_fact:
+        avi_config:
+          vsvip:
+            - name: vsvip-dns-ipam-ansible-avi-config
+              cloud_ref: /api/cloud/?name=dc1_vCenter
+              vip:
+                - enabled: true
+                  auto_allocate_ip: true
+                  ipam_network_subnet:
+                    subnet:
+                      ip_addr:
+                        type: V4
+                        addr: "100.64.131.0"
+                      mask: 24
+                  vip_id: "101"
+                  dns_info:
+                  fqdn: vsvip-dns-ipam-ansible-avi-config.vmw.avidemo.fr
+          pool:
+            - name: pool-ansible-avi-config
+              cloud_ref: /api/cloud/?name=dc1_vCenter
+              servers:
+                - ip:
+                    addr: 100.64.130.203
+                    type: V4
+                - ip:
+                    addr: 100.64.130.204
+                    type: V4
+          virtualservice:
+            - name: vs-ansible-avi-config
+              cloud_ref: /api/cloud/?name=dc1_vCenter
+              application_profile_ref: /api/applicationprofile/?name=System-HTTP
+              vsvip_ref: /api/vsvip/?name=vsvip-dns-ipam-ansible-avi-config
+              services:
+                - enable_ssl: false
+                  port: 80
+              pool_ref: /api/pool/?name=pool-ansible-avi-config
+              enabled: true
+
+    - name: Avi Application | Setup foo
+      import_role:
+        name: aviconfig
+      vars:
+        avi_config: "{{ avi_config }}"
+        avi_creds_file: ".avicreds.json"

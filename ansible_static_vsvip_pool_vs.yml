@@ -1,0 +1,40 @@
+---
+- hosts: localhost
+  connection: local
+  collections:
+    - vmware.alb
+  tasks:
+
+    - name: defining avi config
+      set_fact:
+        avi_config:
+          vsvip:
+            - name: vsvip-ansible-avi-config
+              vip:
+                - enabled: true
+                  ip_address:
+                    addr: 100.64.66.121
+                    type: V4
+                  vip_id: "100"
+          pool:
+            - name: pool-ansible-avi-config
+              servers:
+                - ip:
+                    addr: 100.64.130.203
+                    type: V4
+          virtualservice:
+            - name: vs-ansible-avi-config
+              application_profile_ref: /api/applicationprofile/?name=System-HTTP
+              vsvip_ref: /api/vsvip/?name=vsvip-ansible-avi-config
+              services:
+                - enable_ssl: false
+                  port: 80
+              pool_ref: /api/pool/?name=pool-ansible-avi-config
+              enabled: true
+
+    - name: Avi Application | Setup foo
+      import_role:
+        name: aviconfig
+      vars:
+        avi_config: "{{ avi_config }}"
+        avi_creds_file: ".avicreds.json"
